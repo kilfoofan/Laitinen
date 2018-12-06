@@ -39,5 +39,46 @@ if (isset($_GET['save'])) { // jos lisäysdialogin tallenna-nappia on painettu
         echo "<p style='color:red'>Virhe lisättäessä dataa tietokantaan. Viesti: " . mysqli_error($conn) . "</p>";
     }
     //echo json_encode($result);
+}else if(isset($_GET["setRem"])){
+    $setRem = $_GET["setRem"];
+    $id = $_GET["id"];
+
+    $id = mysqli_real_escape_string($conn, $id);
+    $setRem = mysqli_real_escape_string($conn, $setRem);
+
+    $query = "UPDATE ". 
+    "device ".
+    "SET remove='".$setRem."' ".
+    "WHERE id='".$id."'";
+    error_log("edit: " .$query);
+    $response = @mysqli_query($conn, $query);
+    $result = [];
+    if ($response) { // Jos kysely onnistui, palataan aloitussivulle siten, että parametreina ovat $_SESSION[]-muuttujiin tallennetut hakuehdot
+        
+    } else {
+        echo "<p style='color:red'>Virhe lisättäessä dataa tietokantaan. Viesti: " . mysqli_error($conn) . "</p>";
+    }
+    //echo json_encode($result);
+}else if(isset($_GET["setRes"])){
+    $setRes = $_GET["setRes"];
+    $id = $_GET["id"];
+
+    $id = mysqli_real_escape_string($conn, $id);
+    $setRes = mysqli_real_escape_string($conn, $setRes);
+
+    $query = "UPDATE ". 
+    "device ".
+    "SET isReserved='".$setRes."', Reservations = Reservations + 1 ".
+    "WHERE id='".$id."'";
+    error_log("edit: " .$query);
+    $response = @mysqli_query($conn, $query);
+    $result = [];
+    if ($response) { // Jos kysely onnistui, palataan aloitussivulle siten, että parametreina ovat $_SESSION[]-muuttujiin tallennetut hakuehdot
+        
+    } else {
+        echo "<p style='color:red'>Virhe lisättäessä dataa tietokantaan. Viesti: " . mysqli_error($conn) . "</p>";
+    }
+    //echo json_encode($result);
 }
+
 ?>

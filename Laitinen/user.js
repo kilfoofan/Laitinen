@@ -1,12 +1,51 @@
 //Tämä tiedosto sisältää kaikki javaScript-koodit käyttäjien hallintaa varten
-//This file contains all javaScript for handling users
+//This file contains all javaScript
 
 $(document).ready(function() {
   var data, call, url, whereTo;
   var userExists = 1;
+  var startDate,
+    endDate,
+    dateRange = [];
+
+  $("#reserveStartDate").datepicker({
+    dateFormat: "yy-mm-dd",
+    onSelect: function(date) {
+      startDate = $(this).datepicker("getDate");
+    },
+    beforeShowDay: function(date) {
+      var dateString = jQuery.datepicker.formatDate("yy-mm-dd", date);
+      //console.log(dateString);
+      return [dateRange.indexOf(dateString) == -1];
+    }
+  });
+  $("#reserveEndDate").datepicker({
+    dateFormat: "yy-mm-dd",
+    onSelect: function(date) {
+      endDate = $(this).datepicker("getDate");
+      for (
+        var d = new Date(startDate);
+        d <= new Date(endDate);
+        d.setDate(d.getDate() + 1)
+      ) {
+        dateRange.push($.datepicker.formatDate("yy-mm-dd", d));
+      }
+    },
+    beforeShowDay: function(date) {
+      var dateString = jQuery.datepicker.formatDate("yy-mm-dd", date);
+      //console.log(dateString);
+      return [dateRange.indexOf(dateString) == -1];
+    }
+  });
+
+  $("#reserveStartDate, #reserveEndDate").datepicker("setDate", new Date());
+
+  $(function() {
+    $("#reserveStartDate, #reserveEndDate").datepicker();
+  });
 
   $(
-    "#registerDialog, #uInfoDialog, #aInfoDialog, #userDevicesDialog, #adminGetDevicesDialog, #adminDevicesDialog, #adminEditDevicesDialog"
+    "#registerDialog, #uInfoDialog, #aInfoDialog, #userDevicesDialog, #adminGetDevicesDialog, #adminDevicesDialog, #adminEditDevicesDialog, #reserveDevDialog"
   ).dialog({
     autoOpen: false,
     width: 400,
@@ -58,10 +97,12 @@ $(document).ready(function() {
       if (response[0].isAdmin == 0) {
         $("#login").hide();
         setUserInfo(response);
+        $("#user").text("Welcome " + $("#infoname").val());
         $("#loggedUser").show();
       } else {
         $("#login").hide();
         setUserInfo(response);
+
         $("#loggedAdmin").show();
       }
     } else {
@@ -162,6 +203,7 @@ $(document).ready(function() {
     e.preventDefault();
     $("#uInfoDialog").dialog("close");
   });
+
   $("#uinfoUButton").click(function(e) {
     e.preventDefault();
     if ($("#uinfopassword1").val() == $("#uinfopassword2").val()) {
@@ -204,6 +246,7 @@ $(document).ready(function() {
 
   function UpdatedUser(response) {
     setUserInfo2(response);
+    $("#uInfoDialog").dialog("close");
   }
   //päivitys päättyy
   //end of update
@@ -346,6 +389,7 @@ $(document).ready(function() {
     ).val("");
     $("#adminDevicesDialog").dialog("close");
   }
+
   $(document).on("click", "button.remove", function(e) {
     var sqlData = "id=" + e.target.id;
     var call = "GET";
@@ -354,6 +398,26 @@ $(document).ready(function() {
     sqlCall(sqlData, call, url, whereTo);
     var table = document.getElementById("adminDevicesTable");
     table.deleteRow(parseInt(e.target.name) + 1);
+  });
+
+  $(document).on("click", "button.setRemove", function(e) {
+    var sqlData = "id=" + e.target.id + "&setRem=1";
+    var call = "GET";
+    var url = "updateDevice.php";
+    var whereTo = null;
+    sqlCall(sqlData, call, url, whereTo);
+    document.getElementById(e.target.id).innerText = "Cancel Remove";
+    $("#" + e.target.id).attr("class", "cancelRemove");
+  });
+
+  $(document).on("click", "button.cancelRemove", function(e) {
+    var sqlData = "id=" + e.target.id + "&setRem=0";
+    var call = "GET";
+    var url = "updateDevice.php";
+    var whereTo = null;
+    document.getElementById(e.target.id).innerText = "Set Remove";
+    $("#" + e.target.id).attr("class", "setRemove");
+    sqlCall(sqlData, call, url, whereTo);
   });
 
   $(document).on("click", "button.edit", function(e) {
@@ -442,6 +506,11 @@ $(document).ready(function() {
     sqlCall(sqlData, call, url, whereTo);
   });
 
+  $("#aEditCancelDevButton").click(function(e) {
+    e.preventDefault();
+    $("#adminEditDevicesDialog").dialog("close");
+  });
+
   function adminShowDevices(devicedata) {
     $("#adminDevicesTable").html("");
     if (devicedata.length != 0) {
@@ -468,51 +537,76 @@ $(document).ready(function() {
       cell8.innerHTML = "Serial";
       cell9.innerHTML = "Reservations";
       for (var i = 0; i < devicedata.length; i++) {
-        var row = table.insertRow(-1);
-        var cell1 = row.insertCell(0);
-        var cell2 = row.insertCell(1);
-        var cell3 = row.insertCell(2);
-        var cell4 = row.insertCell(3);
-        var cell5 = row.insertCell(4);
-        var cell6 = row.insertCell(5);
-        var cell7 = row.insertCell(6);
-        var cell8 = row.insertCell(7);
-        var cell9 = row.insertCell(8);
-        var cell10 = row.insertCell(9);
-        var cell11 = row.insertCell(10);
-        cell1.innerHTML = devicedata[i].name;
-        cell2.innerHTML = devicedata[i].model;
-        cell3.innerHTML = devicedata[i].make;
-        cell4.innerHTML = devicedata[i].description;
-        cell5.innerHTML = devicedata[i].owner;
-        cell6.innerHTML = devicedata[i].location;
-        cell7.innerHTML = devicedata[i].category;
-        cell8.innerHTML = devicedata[i].serial;
-        cell9.innerHTML = devicedata[i].Reservations;
-        if (devicedata[i].isReserved == 0 || devicedata[i].isOnLoad == 0) {
-          cell10.innerHTML =
+        if (
+          devicedata[i].remove == 0 ||
+          (devicedata[i].remove == 1 && devicedata[i].isReserved == 1)
+        ) {
+          var row = table.insertRow(-1);
+          var cell1 = row.insertCell(0);
+          var cell2 = row.insertCell(1);
+          var cell3 = row.insertCell(2);
+          var cell4 = row.insertCell(3);
+          var cell5 = row.insertCell(4);
+          var cell6 = row.insertCell(5);
+          var cell7 = row.insertCell(6);
+          var cell8 = row.insertCell(7);
+          var cell9 = row.insertCell(8);
+          var cell10 = row.insertCell(9);
+          var cell11 = row.insertCell(10);
+          cell1.innerHTML = devicedata[i].name;
+          cell2.innerHTML = devicedata[i].model;
+          cell3.innerHTML = devicedata[i].make;
+          cell4.innerHTML = devicedata[i].description;
+          cell5.innerHTML = devicedata[i].owner;
+          cell6.innerHTML = devicedata[i].location;
+          cell7.innerHTML = devicedata[i].category;
+          cell8.innerHTML = devicedata[i].serial;
+          cell9.innerHTML = devicedata[i].Reservations;
+          if (
+            (devicedata[i].isReserved == 0 || devicedata[i].isOnLoad == 0) &&
+            devicedata[i].remove == 0
+          ) {
+            cell10.innerHTML =
+              "<button " +
+              'id="' +
+              devicedata[i].ID +
+              '" class="remove" name="' +
+              i +
+              '">Remove</button>';
+          } else if (
+            (devicedata[i].isReserved == 1 || devicedata[i].isOnLoad == 1) &&
+            devicedata[i].remove == 0
+          ) {
+            cell10.innerHTML =
+              "<button " +
+              'id="' +
+              devicedata[i].ID +
+              '" class="setRemove" name="' +
+              i +
+              '" value="Set Remove">Set Remove</button>';
+          } else {
+            cell10.innerHTML =
+              "<button " +
+              'id="' +
+              devicedata[i].ID +
+              '" class="cancelRemove" name="' +
+              i +
+              '" value="Cancel Remove">Cancel Remove</button>';
+          }
+          cell11.innerHTML =
             "<button " +
             'id="' +
             devicedata[i].ID +
-            '" class="remove" name="' +
-            i +
-            '">Remove</button>';
+            '" class="edit">Edit</button>';
+          //var testi = "<button " +'id="' + data[i].avain + '">testi</button>';
+          //cell9.innerHTML = "<button " +'id="' + data[i].avain + '" class="poista(' + data[i].avain + "," + i + ')">poista</button>';
         } else {
-          cell10.innerHTML =
-            "<button " +
-            'id="' +
-            devicedata[i].ID +
-            '" class="remove" name="' +
-            i +
-            '" disabled>Remove</button>';
+          var sqlData = "id=" + devicedata[i].ID;
+          var call = "GET";
+          var url = "deleteDevice.php";
+          var whereTo = null;
+          sqlCall(sqlData, call, url, whereTo);
         }
-        cell11.innerHTML =
-          "<button " +
-          'id="' +
-          devicedata[i].ID +
-          '" class="edit">Edit</button>';
-        //var testi = "<button " +'id="' + data[i].avain + '">testi</button>';
-        //cell9.innerHTML = "<button " +'id="' + data[i].avain + '" class="poista(' + data[i].avain + "," + i + ')">poista</button>';
       }
       $("#adminGetDevicesDialog").dialog("close");
       $("#aDevicesView").show();
@@ -537,6 +631,11 @@ $(document).ready(function() {
   $("#uCancelDevButton").click(function(e) {
     e.preventDefault();
     $("#userDevicesDialog").dialog("close");
+  });
+
+  $("#reserveCancelButton").click(function(e) {
+    e.preventDefault();
+    $("#reserveDevDialog").dialog("close");
   });
 
   $("#uGetDevButton").click(function(e) {
@@ -590,6 +689,97 @@ $(document).ready(function() {
     sqlCall(sqlData, call, url, whereTo);
   });
 
+  $(document).on("click", "button.reserve", function(e) {
+    $("#reserveName, #reserveStartDate, #reserveEndDate").val("");
+    setReserveFields(e.target.id, 1);
+    $("#reserveDevDialog").dialog("open");
+  });
+
+  function reservedDates(deviceData, times) {
+    if (times == 1) {
+      var sqlData = "id=" + deviceData;
+      var call = "GET";
+      var url = "getReserves.php";
+      var whereTo = "reserveDates";
+      sqlData += "&save=true";
+      sqlCall(sqlData, call, url, whereTo);
+    } else {
+      for (var i = 0; i < deviceData.length; i++) {
+        startDate = deviceData[i].begins;
+        endDate = deviceData[i].ends;
+        for (
+          var d = new Date(startDate);
+          d <= new Date(endDate);
+          d.setDate(d.getDate() + 1)
+        ) {
+          dateRange.push($.datepicker.formatDate("yy-mm-dd", d));
+        }
+      }
+    }
+  }
+
+  function setReserveFields(deviceData, times) {
+    if (times == 1) {
+      dateRange = [];
+      reservedDates(deviceData, 1);
+      var sqlData = "id=" + deviceData;
+      var call = "GET";
+      var url = "getDevice";
+      var whereTo = "reserveFields";
+      sqlData += "&save=true";
+      sqlCall(sqlData, call, url, whereTo);
+    } else {
+      $("#reserveDevID").val(deviceData[0].ID);
+      $("#reserveName").val(deviceData[0].name);
+    }
+  }
+  function convertDate(date) {
+    var year = date.getUTCFullYear();
+    var month = date.getUTCMonth() + 1;
+    var day = date.getUTCDate() + 1;
+    date = year + "-" + month + "-" + day;
+    return date;
+  }
+
+  $("#reserveButton").click(function(e) {
+    e.preventDefault();
+    var date = $("#reserveStartDate").datepicker("getDate");
+    var begins = convertDate(date);
+    date = $("#reserveEndDate").datepicker("getDate");
+    var ends = convertDate(date);
+    if (begins != "" && ends != "") {
+      sqlData =
+        "userid=" +
+        $("#infoid").val() +
+        "&begins=" +
+        begins +
+        "&ends=" +
+        ends +
+        "&devid=" +
+        $("#reserveDevID").val() +
+        "&save=true";
+      call = "POST";
+      url = "reserveDevice.php";
+      whereTo = null;
+      sqlCall(sqlData, call, url, whereTo);
+      sqlData = "id=" + $("#reserveDevID").val() + "&setRes=1";
+      call = "GET";
+      url = "updateDevice.php";
+      whereTo = null;
+      sqlCall(sqlData, call, url, whereTo);
+    }
+    $("#reserveDevDialog").dialog("close");
+  });
+
+  $("#reserveCancelButton").click(function(e) {
+    e.preventDefault();
+    $("#reserveDevDialog").dialog("close");
+  });
+
+  function ReservedDev(response) {
+    $("#reserveDevDialog").dialog("close");
+  }
+
   function userShowDevices(devicedata) {
     $("#userDevicesTable").html("");
     if (devicedata.length != 0) {
@@ -613,26 +803,34 @@ $(document).ready(function() {
       cell7.innerHTML = "Category";
       cell8.innerHTML = "Serial";
       for (var i = 0; i < devicedata.length; i++) {
-        var row = table.insertRow(-1);
-        var cell1 = row.insertCell(0);
-        var cell2 = row.insertCell(1);
-        var cell3 = row.insertCell(2);
-        var cell4 = row.insertCell(3);
-        var cell5 = row.insertCell(4);
-        var cell6 = row.insertCell(5);
-        var cell7 = row.insertCell(6);
-        var cell8 = row.insertCell(7);
-        var cell9 = row.insertCell(8);
-        cell1.innerHTML = devicedata[i].name;
-        cell2.innerHTML = devicedata[i].model;
-        cell3.innerHTML = devicedata[i].make;
-        cell4.innerHTML = devicedata[i].description;
-        cell5.innerHTML = devicedata[i].owner;
-        cell6.innerHTML = devicedata[i].location;
-        cell7.innerHTML = devicedata[i].category;
-        cell8.innerHTML = devicedata[i].serial;
-        cell9.innerHTML = "<button>Reserve</button";
-        //var testi = "<button " +'id="' + data[i].avain + '">testi</button>';
+        if (devicedata[i].remove == 0) {
+          var row = table.insertRow(-1);
+          var cell1 = row.insertCell(0);
+          var cell2 = row.insertCell(1);
+          var cell3 = row.insertCell(2);
+          var cell4 = row.insertCell(3);
+          var cell5 = row.insertCell(4);
+          var cell6 = row.insertCell(5);
+          var cell7 = row.insertCell(6);
+          var cell8 = row.insertCell(7);
+          var cell9 = row.insertCell(8);
+          cell1.innerHTML = devicedata[i].name;
+          cell2.innerHTML = devicedata[i].model;
+          cell3.innerHTML = devicedata[i].make;
+          cell4.innerHTML = devicedata[i].description;
+          cell5.innerHTML = devicedata[i].owner;
+          cell6.innerHTML = devicedata[i].location;
+          cell7.innerHTML = devicedata[i].category;
+          cell8.innerHTML = devicedata[i].serial;
+          cell9.innerHTML =
+            "<button " +
+            'id="' +
+            devicedata[i].ID +
+            '" class="reserve" name="' +
+            i +
+            '">Reserve</button>';
+          //var testi = "<button " +'id="' + data[i].avain + '">testi</button>';
+        }
       }
       $("#userDevicesDialog").dialog("close");
       $("#uDevicesView").show();
@@ -710,6 +908,14 @@ $(document).ready(function() {
         if (whereTo == "updateDev") {
           //data = JSON.parse(data);
           UpdatedDev(data);
+        }
+        if (whereTo == "reserveFields") {
+          data = JSON.parse(data);
+          setReserveFields(data, 0);
+        }
+        if (whereTo == "reserveDates") {
+          data = JSON.parse(data);
+          reservedDates(data, 0);
         }
       })
       .fail(function(jqXHR, textStatus, errorThrown) {
@@ -866,6 +1072,7 @@ $(document).ready(function() {
   }
 
   function setUserInfo(userdata) {
+    $("#infoid").val(userdata[0].ID);
     $("#infoname").val(userdata[0].name);
     $("#infoaddress").val(userdata[0].address);
     $("#infousername").val(userdata[0].username);
@@ -874,6 +1081,7 @@ $(document).ready(function() {
   }
   function setUserInfo2(userdata) {
     userdata = JSON.parse(userdata);
+    $("#infoid").val(userdata[0].ID);
     $("#infoname").val(userdata[0].name);
     $("#infoaddress").val(userdata[0].address);
     $("#infousername").val(userdata[0].username);

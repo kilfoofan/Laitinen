@@ -16,6 +16,7 @@
             justify-content: flex-start;
         }
     </style>
+    <!--JQuery-->
     <script src="https://code.jquery.com/jquery-1.10.2.js" type="text/javascript"></script> <!--näiden järjestyksellä on väliä-->
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script> <!--näiden järjestyksellä on väliä, huom versiot-->
     <script src="user.js"></script> <!--index.php sivun javascriptit-->
@@ -36,7 +37,7 @@
 
         <div id="loggedUser" class="container-fluid pt-2">
             <p id="user">
-                User
+
             </p>
             <form id="logoutU" class="form-inline" action="">
                 <button class="btn btn-outline-success my-2 my-sm-1" name="uDeviceButton" id="uDeviceButton">Devices</button>
@@ -289,6 +290,29 @@
             </table>
             </form>
         </div>
+        <div id="reserveDevDialog">
+            <form id="reserveForm"><!--muuta start ja end date kentät date kentiksi-->
+                <table id="reserveTable" action="">
+                    <input type="hidden" id="reserveDevID">
+                    <tr>
+                        <td><label for="reserveName">Name</label></td>
+                        <td><input type="text" id="reserveName"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="reserveStartDate">Start Date</label></td>
+                        <td><p><input type="text" id="reserveStartDate"></p></td>
+                    </tr>
+                    <tr>
+                        <td><label for="reserveEndDate">End Date</label></td>
+                        <td><input type="text" id="reserveEndDate"></td>
+                    </tr>
+                    <tr>                        
+                        <td><button id="reserveButton" class="btn btn-outline-success my-2 my-sm-0">Reserve</button></td>
+                        <td><button id="reserveCancelButton" class="btn btn-outline-success my-2 my-sm-0">Cancel</button></td>
+                    </tr>
+                </table>
+            </form>
+        </div>
         <!--Dialogs end-->
         <div id="ilmotus"></div>
         <div id="uDevicesView">
@@ -303,6 +327,7 @@
     <!--tietojen tallennus-->
     <div id="userinformation">
         <form id="information">
+            <input type="text" id="infoid">
             <input type="text" id="infoname">
             <input type="text" id="infoaddress">
             <input type="text" id="infopassword">
